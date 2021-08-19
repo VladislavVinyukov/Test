@@ -7,7 +7,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.viewsets import ModelViewSet
 
 from store.models import Product
-from store.serializers import ProductSerializer
+from store.serializers import ProductAddSerializer, ProductViewSerializer
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -17,9 +17,13 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 
 class ProductView(ModelViewSet):
-    serializer_class = ProductSerializer
+    serializer_class = ProductAddSerializer
     queryset = Product.objects.all()
     pagination_class = StandardResultsSetPagination
+
+    def create(self, *args, **kwargs):
+        """p = Штук,kg = Килограмм,l = Литр"""
+        return super().create(*args, **kwargs)
 
     @action(detail=False, methods=['get'], url_path="total-cost")
     def total_cost(self, request, *args, **kwargs):
@@ -34,8 +38,13 @@ class ProductView(ModelViewSet):
 
         page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = self.get_serializer(page, many=True)
+            serializer = ProductViewSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(queryset, many=True)
+        serializer = ProductViewSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = ProductViewSerializer(instance)
         return Response(serializer.data)
